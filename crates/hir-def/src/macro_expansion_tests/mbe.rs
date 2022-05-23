@@ -1544,3 +1544,58 @@ struct Foo;
 "##]],
     )
 }
+
+#[test]
+fn nested_double_dollar() {
+    check(
+        r#"
+#![feature(macro_metavar_expr)]
+
+macro_rules! outer {
+    ($outer_name:ident) => {
+        macro_rules! inner {
+            ($$inner_name:ident) => {
+                impl $outer_name {
+                    fn $$inner_name() {}
+                }
+            };
+        }
+    };
+}
+
+struct Hello;
+
+outer!(Hello);
+inner!(world);
+"#,
+        expect![[r#"
+#![feature(macro_metavar_expr)]
+
+macro_rules! outer {
+    ($outer_name:ident) => {
+        macro_rules! inner {
+            ($$inner_name:ident) => {
+                impl $outer_name {
+                    fn $$inner_name() {}
+                }
+            };
+        }
+    };
+}
+
+struct Hello;
+
+macro_rules !inner {
+    ($inner_name: ident) = > {
+        impl Hello {
+            fn $inner_name() {}
+        }
+    }
+    ;
+}
+impl Hello {
+    fn world() {}
+}
+"#]],
+    );
+}
